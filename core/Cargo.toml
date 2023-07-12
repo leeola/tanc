@@ -1,0 +1,12 @@
+[package]
+name = "tanc_core"
+version = "0.0.1"
+authors = ["Lee Olayvar <leegit@fastmail.com>"]
+edition = "2021"
+license-file = "LICENSE"
+
+[lib]
+name = "tanc_core"
+path = "src/lib.rs"
+
+[dependencies]

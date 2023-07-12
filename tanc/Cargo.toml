@@ -1,0 +1,19 @@
+[package]
+name = "tanc"
+version = "0.0.1"
+authors = ["Lee Olayvar <leegit@fastmail.com>"]
+edition = "2021"
+license-file = "LICENSE"
+
+[[bin]]
+name = "tanc"
+path = "src/bin/tanc.rs"
+
+[dependencies]
+tracing.workspace = true
+anyhow.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal"] }
+clap = { version = "4.3", features = ["derive", "env"] }
+tracing-subscriber = { version = "0.3", features = ["parking_lot", "env-filter"] }
+tracing-appender = { version = "0.2.2", features = ["parking_lot"] }
+tower-lsp = "0.19.0"
