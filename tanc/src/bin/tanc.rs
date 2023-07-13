@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{ArgAction, Parser};
 use std::{fs::File, path::PathBuf};
+use tanc_core::server::Backend;
 use tracing::{metadata::LevelFilter, subscriber};
 use tracing_subscriber::{fmt::Layer, layer::SubscriberExt, EnvFilter};
 
@@ -94,6 +95,6 @@ async fn main() -> Result<()> {
     .unwrap();
 
     tracing::info!("main");
-
+    Backend::new().await;
     Ok(())
 }

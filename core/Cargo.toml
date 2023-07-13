@@ -10,3 +10,10 @@ name = "tanc_core"
 path = "src/lib.rs"
 
 [dependencies]
+tracing.workspace = true
+thiserror.workspace = true
+tower-lsp = "0.19"
+tokio = { workspace = true, features = ["io-std"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros", "test-util"] }

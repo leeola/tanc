@@ -817,8 +817,8 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "clap",
+ "tanc_core",
  "tokio",
- "tower-lsp",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
@@ -827,6 +827,32 @@ dependencies = [
 [[package]]
 name = "tanc_core"
 version = "0.0.1"
+dependencies = [
+ "thiserror",
+ "tokio",
+ "tower-lsp",
+ "tracing",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a35fc5b8971143ca348fa6df4f024d4d55264f3468c71ad1c2f365b0a4d58c42"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "463fe12d7993d3b327787537ce8dd4dfa058de32fc2b195ef3cde03dc4771e8f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.25",
+]
 
 [[package]]
 name = "thread_local"
