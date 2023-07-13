@@ -71,20 +71,31 @@ async fn main() -> Result<()> {
         (None, None)
     };
 
-    let env_filter = EnvFilter::builder()
-        .with_default_directive(
-            match config.verbose as i8 - config.quiet as i8 {
-                i if i <= -2 => LevelFilter::OFF,
-                -1 => LevelFilter::ERROR,
-                0 => LevelFilter::WARN,
-                1 => LevelFilter::INFO,
-                2 => LevelFilter::DEBUG,
-                3 | _ => LevelFilter::TRACE,
-            }
-            .into(),
-        )
-        .with_env_var("RUST_LOG")
-        .from_env_lossy();
+    let level_filter = match config.verbose as i8 - config.quiet as i8 {
+        i if i <= -2 => Some(LevelFilter::OFF),
+        -1 => Some(LevelFilter::ERROR),
+        0 => None,
+        1 => Some(LevelFilter::INFO),
+        2 => Some(LevelFilter::DEBUG),
+        3 | _ => Some(LevelFilter::TRACE),
+    };
+
+    let env_filter = {
+        let env_filter_from_env = EnvFilter::try_from_default_env().ok();
+        let level = level_filter.map(LevelFilter::into_level);
+        match (env_filter_from_env, level) {
+            (Some(env_filter), _) => env_filter,
+            (None, None) => EnvFilter::builder()
+                .with_default_directive(LevelFilter::WARN.into())
+                .parse_lossy(""),
+            (None, Some(None)) => EnvFilter::builder()
+                .with_default_directive(LevelFilter::OFF.into())
+                .parse_lossy(""),
+            (None, Some(Some(level))) => EnvFilter::builder()
+                .parse(format!("warn,tanc={level}"))
+                .expect("default directive format failed to parse"),
+        }
+    };
 
     subscriber::set_global_default(
         tracing_subscriber::registry()
@@ -94,7 +105,11 @@ async fn main() -> Result<()> {
     )
     .unwrap();
 
+    tracing::trace!("main");
+    tracing::debug!("main");
     tracing::info!("main");
+    tracing::warn!("main");
+    tracing::error!("main");
     Backend::new().await;
     Ok(())
 }
