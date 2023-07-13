@@ -81,7 +81,7 @@ async fn main() -> Result<()> {
     };
 
     let env_filter = {
-        let env_filter_from_env = EnvFilter::try_from_default_env().ok();
+        let env_filter_from_env = EnvFilter::try_from_env("TANC_LOG").ok();
         let level = level_filter.map(LevelFilter::into_level);
         match (env_filter_from_env, level) {
             (Some(env_filter), _) => env_filter,
