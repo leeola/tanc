@@ -15,6 +15,7 @@ thiserror.workspace = true
 tower-lsp = "0.19"
 tokio = { workspace = true, features = ["io-std"] }
 rnix = "0.11"
+compact_str = "0.7"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros", "test-util"] }
