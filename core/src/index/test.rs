@@ -4,14 +4,20 @@ pub mod ast {
 
     #[test]
     fn doc_on_root_attr_set() {
-        return;
-        let mut fi = FileIndex::default();
-        fi.with_nix(
+        let mut ti = TancIndex::default();
+        ti.insert(
+            "foo.nix",
             r#"# foo
+# bar
 {
     bar = "bar";
 }"#,
         );
-        assert_eq!(fi.docs(), vec![&Doc { doc: "foo".into() }]);
+        assert_eq!(
+            ti.docs("foo.nix"),
+            vec![&Doc {
+                doc: Some("foo".into())
+            }]
+        );
     }
 }
