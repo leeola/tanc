@@ -25,18 +25,6 @@ impl From<(usize, usize)> for Pos {
         Self { line, char }
     }
 }
-// 2,5 2,9
-// 1,5 1,9
-// 1,0 2.1
-// 0,7
-// 0,5 0,6
-// 0,0 2,0
-
-// 1,7
-// 1,5 1,6
-// 1,0 2,0
-// 0,5 0,9
-// 0,1 3,0
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PosRange {
     start_incl: Pos,
@@ -88,6 +76,9 @@ struct Entry<T> {
     pub children: EntryMap<T>,
 }
 type EntryMap<T> = BTreeMap<EndExclPos, Entry<T>>;
+/// A helper to store a range of Line,Col [`Pos`] values associated with a given type, for later
+/// "efficient" lookup by `Line,Col`. Where a range is assumed to be an ident, token, ast node, etc.
+///
 /// NIT: This is a pretty naive implementation and could/should be improved at some point. However
 /// it's simple and correct, so good for a first pass.
 #[derive(Debug, Default, Clone)]
@@ -132,8 +123,8 @@ where
             .filter(|(_, entry)| entry.start_incl <= range.into())
             .next()
     }
-    // NIT: This uses Pos, the above uses PosRange. Could prob just make them `P: Into<StartInclPos>
-    // + P: Into<EndExclPos>`.
+    // NIT: This uses Pos, [`Self::get_entry_mut`] uses PosRange. Could prob just make them
+    // `P: Into<StartInclPos> + P: Into<EndExclPos>`.
     fn recur_get_entry(entry_map: &EntryMap<T>, pos: Pos) -> Option<(&EndExclPos, &Entry<T>)> {
         let (end_pos, entry) = entry_map
             .range(EndExclPos(pos.next_char())..)
@@ -149,26 +140,6 @@ where
     }
     pub fn get(&self, &pos: &Pos) -> Option<&T> {
         Self::recur_get_entry(&self.0, pos).map(|(_, entry)| &entry.value)
-        // // NIT: Use upper/lower bound when they become available. For now we have to fake this by
-        // // storing the end pos, and ranging onto the next end.
-        // dbg!(&self, &self.0.len(), pos);
-        // // NIT: This could be improved by perhaps binary searching to start from a given index,
-        // but // i think more likely this should use a BTreeMap and use a reversed key type
-        // to // sort the values, but then during lookup i.. think it would need to use
-        // custom // comparison logic. Ie if the keys were `Reverse<T>`, it might be
-        // possible to the use a // custom borrow type to compare non-reversed keys... i
-        // think? //
-        // // So this impl is just an easy, obvious, correct, first impl.
-        // self.0
-        //     .iter()
-        //     .filter(|(range, _)| range.start_incl <= pos && pos <= range.end_excl)
-        //     .take_while(|(range, _)| pos < range.end_excl)
-        //     .filter(|(range, _)| pos < range.end_excl)
-        //     .inspect(|elm| {
-        //         dbg!(elm);
-        //     })
-        //     .last()
-        //     .map(|(_, v)| v)
     }
 }
 #[test]
@@ -203,18 +174,18 @@ fn get_overlapping_single_line() {
     assert_eq!(pi.get(&(0, 3).into()), Some(&"b"));
     assert_eq!(pi.get(&(0, 4).into()), Some(&"b"));
 }
-// #[test]
-// fn get_multi_line_overlapping_single_line() {
-//     let mut pi = PosIndex::new();
-//     pi.insert((0, 0, 3, 5), "a");
-//     assert_eq!(pi.get(&(0, 0).into()), Some(&"a"));
-//     assert_eq!(pi.get(&(1, 10).into()), Some(&"a"));
-//     assert_eq!(pi.get(&(3, 5).into()), None);
-//     pi.insert((1, 5, 1, 10), "b");
-//     assert_eq!(pi.get(&(0, 5).into()), Some(&"a"));
-//     assert_eq!(pi.get(&(1, 4).into()), Some(&"a"));
-//     assert_eq!(pi.get(&(1, 5).into()), Some(&"b"));
-//     assert_eq!(pi.get(&(1, 10).into()), Some(&"b"));
-//     assert_eq!(pi.get(&(1, 11).into()), Some(&"a"));
-//     assert_eq!(pi.get(&(3, 4).into()), Some(&"a"));
-// }
+#[test]
+fn get_multi_line_overlapping_single_line() {
+    let mut pi = PosIndex::new();
+    pi.insert((0, 0, 3, 5), "a");
+    assert_eq!(pi.get(&(0, 0).into()), Some(&"a"));
+    assert_eq!(pi.get(&(1, 9).into()), Some(&"a"));
+    assert_eq!(pi.get(&(3, 5).into()), None);
+    pi.insert((1, 5, 1, 10), "b");
+    assert_eq!(pi.get(&(0, 5).into()), Some(&"a"));
+    assert_eq!(pi.get(&(1, 4).into()), Some(&"a"));
+    assert_eq!(pi.get(&(1, 5).into()), Some(&"b"));
+    assert_eq!(pi.get(&(1, 9).into()), Some(&"b"));
+    assert_eq!(pi.get(&(1, 10).into()), Some(&"a"));
+    assert_eq!(pi.get(&(3, 4).into()), Some(&"a"));
+}

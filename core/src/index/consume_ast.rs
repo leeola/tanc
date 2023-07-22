@@ -3,7 +3,7 @@ use crate::index::ast_path::AstSeg;
 use super::{ast_path::AstPath, Doc};
 use compact_str::CompactString;
 use rnix::{
-    ast::{AstNode, AstToken, Comment},
+    ast::{AstNode, AstToken, Comment, Ident},
     NodeOrToken, SyntaxKind, SyntaxNode, SyntaxToken, TextRange,
 };
 use std::collections::BTreeMap;
@@ -24,18 +24,24 @@ struct SharedState {
     line_cursor: usize,
     line_cursor_char_offset: usize,
 }
+#[derive(Debug, Default, Clone)]
+struct NodeState {
+    comment_buf: Vec<Comment>,
+    token_ident: Option<CompactString>,
+}
+// TODO: Rename Root
 #[derive(Debug)]
 struct ConsumeAst<'a> {
     shared: &'a mut SharedState,
     path: AstPath,
-    doc_buf: Vec<Comment>,
+    state: NodeState,
 }
 impl ConsumeAst<'_> {
     pub fn new(shared_state: &mut SharedState, path: AstPath) -> ConsumeAst<'_> {
         ConsumeAst {
             shared: shared_state,
             path,
-            doc_buf: Default::default(),
+            state: Default::default(),
         }
     }
     fn node_or_token(&mut self, node_or_token: NodeOrToken<SyntaxNode, SyntaxToken>) {
@@ -61,6 +67,24 @@ impl ConsumeAst<'_> {
                     ast.node_or_token(child);
                 }
             },
+            // Not sure there's anything to do with attrpath and value.
+            SyntaxKind::NODE_ATTRPATH_VALUE => {
+                for child in node.children_with_tokens() {
+                    self.node_or_token(child);
+                }
+                dbg!(&self.state);
+            },
+            SyntaxKind::NODE_ATTRPATH => {
+                eprintln!("{}", node.text());
+                for child in node.children() {
+                    self.node(child);
+                }
+            },
+            SyntaxKind::NODE_IDENT => {
+                for child in node.children_with_tokens() {
+                    self.node_or_token(child);
+                }
+            },
             _ => todo!(),
         }
     }
@@ -75,7 +99,7 @@ impl ConsumeAst<'_> {
                 };
                 // TODO: Parse out TANC syntax, etc. Not sure if i want to parse it here or in the
                 // consumer of the doc.
-                self.doc_buf.push(comment);
+                self.state.comment_buf.push(comment);
             },
             SyntaxKind::TOKEN_WHITESPACE => {
                 let start_incl: usize = token.text_range().start().into();
@@ -101,5 +125,58 @@ impl ConsumeAst<'_> {
     }
     fn doc_pos(&self, range: TextRange) -> (usize, usize) {
         todo!()
+    }
+}
+#[derive(Debug)]
+struct AttrSet<'a> {
+    shared: &'a mut SharedState,
+    path: AstPath,
+    comment_buf: Vec<Comment>,
+    children: Vec<CompactString>,
+}
+impl AttrSet<'_> {
+    pub fn new(
+        shared: &mut SharedState,
+        path: AstPath,
+        comment_buf: Vec<Comment>,
+        node: SyntaxNode,
+    ) -> AttrSet<'_> {
+        todo!()
+    }
+}
+#[derive(Debug)]
+struct AttrPathValue<'a> {
+    shared: &'a mut SharedState,
+    comment_buf: Vec<Comment>,
+}
+impl AttrPathValue<'_> {
+    pub fn new(
+        shared: &'_ mut SharedState,
+        comment_buf: Vec<Comment>,
+        node: SyntaxNode,
+    ) -> AttrPathValue<'_> {
+        let mut self_ = AttrPathValue {
+            shared,
+            comment_buf,
+        };
+        self_.node(node);
+        self_
+    }
+    fn node(&mut self, node: SyntaxNode) {
+        dbg!(node.kind());
+        match node.kind() {
+            SyntaxKind::NODE_ATTRPATH => {
+                eprintln!("{}", node.text());
+                // for child in node.children() {
+                //     self.node(child);
+                // }
+            },
+            SyntaxKind::NODE_IDENT => {
+                // for child in node.children_with_tokens() {
+                //     self.node_or_token(child);
+                // }
+            },
+            _ => todo!(),
+        }
     }
 }
